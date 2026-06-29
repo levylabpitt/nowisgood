@@ -1,0 +1,8 @@
+# Local harness / editor state
+.claude/
+# Logs and deps
+*.log
+node_modules/
+# Scratch
+scratch/
+*.tmp

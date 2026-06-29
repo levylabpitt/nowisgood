@@ -1,0 +1,126 @@
+/* nowisgood - in-page control panel + click-through overlay.
+   Themed to WhenIsGood's own palette so the add-on feels native:
+     free/good   #00FF00   (canDo / canDoGood)
+     if-needed   #CCFF66   (canDoBad)
+     cannot-do   #CC0000
+     unselected  #EFEFEF   (proposed)
+   Fluorescent green is reserved for dark backgrounds / the grid overlay where
+   it matches the site; on white we use a deeper green for legibility.
+   All selectors are nig- prefixed to avoid clashing with WhenIsGood's CSS. */
+
+.nig-panel {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 2147483646;
+  width: 252px;
+  background: #ffffff;
+  color: #1c2330;
+  border: 1px solid #cfe8cf;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0, 60, 0, 0.22);
+  font: 13px/1.4 -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+.nig-panel * { box-sizing: border-box; }
+
+/* dark header strip so the fluorescent wordmark pops, as in the WhenIsGood logo */
+.nig-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #15211a;
+  padding: 8px 12px;
+}
+.nig-logo {
+  font-weight: 800;
+  letter-spacing: .3px;
+  color: #00ff00;
+  text-shadow: 0 0 6px rgba(0, 255, 0, .65), 0 0 2px rgba(0, 255, 0, .9), 0 1px 0 #064006;
+}
+.nig-x {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 18px; line-height: 1; color: #6f8a72; padding: 0 2px;
+}
+.nig-x:hover { color: #00ff00; }
+
+.nig-body { padding: 10px 12px 12px; }
+.nig-collapsed .nig-body { display: none; }
+
+.nig-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+.nig-row:first-child { margin-top: 0; }
+.nig-buttons { justify-content: space-between; }
+
+.nig-btn {
+  flex: 1;
+  border: 1px solid #bcdcbc;
+  background: #f1faf1;
+  color: #14401a;
+  border-radius: 8px;
+  padding: 7px 8px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.nig-btn:hover { background: #e3f6e3; }
+.nig-btn-fill {
+  background: linear-gradient(#19d219, #00bb00);
+  border-color: #009900;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0, 80, 0, .5);
+}
+.nig-btn-fill:hover { background: linear-gradient(#22e622, #00cc00); }
+.nig-btn-overlay.nig-active {
+  background: #00ff00; border-color: #00bb00; color: #0a3d0a;
+  box-shadow: inset 0 0 0 1px #b6ffb6;
+}
+
+.nig-buf { display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: #4a6b4f; flex: 1; }
+.nig-buf input {
+  width: 44px; padding: 3px 4px; font-size: 12px;
+  border: 1px solid #bcdcbc; border-radius: 6px; text-align: right;
+}
+
+.nig-status {
+  margin-top: 10px; font-size: 11.5px; line-height: 1.35; color: #55665a;
+  min-height: 16px;
+}
+.nig-status-ok { color: #167a1b; }
+.nig-status-error { color: #b3261e; }
+.nig-status-busy { color: #0a8a0a; }
+
+/* support-the-original line */
+.nig-support {
+  margin-top: 10px; padding-top: 9px; border-top: 1px solid #e7f1e7;
+  font-size: 10.5px; line-height: 1.4; color: #6a7a6e;
+}
+.nig-support a { color: #0a8a0a; font-weight: 600; text-decoration: none; }
+.nig-support a:hover { text-decoration: underline; }
+.nig-heart { color: #00bb00; }
+
+/* ---- overlay layer (click-through), tinted with WhenIsGood's grid colors ---- */
+.nig-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  z-index: 2147483645;
+  pointer-events: none; /* the whole layer is invisible to clicks */
+  display: none;
+}
+.nig-cell {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 3px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.nig-free  { background: rgba(0, 255, 0, 0.30);   box-shadow: inset 0 0 0 1px rgba(0, 180, 0, .6); }   /* #00FF00 */
+.nig-tight { background: rgba(204, 255, 102, 0.45); box-shadow: inset 0 0 0 1px rgba(150, 190, 40, .7); } /* #CCFF66 */
+.nig-busy  { background: rgba(204, 0, 0, 0.28);    box-shadow: inset 0 0 0 1px rgba(170, 0, 0, .55); }  /* #CC0000 */
+.nig-label {
+  position: absolute;
+  left: 2px; right: 2px; bottom: 1px;
+  font: 9px/1.1 -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #5a1410;
+  white-space: nowrap; text-overflow: ellipsis; overflow: hidden;
+}

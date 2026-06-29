@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>nowisgood settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="wrap">
+    <h1>nowisgood settings</h1>
+
+    <section>
+      <h2>Calendar account</h2>
+      <div class="field">
+        <label for="provider">Provider</label>
+        <select id="provider">
+          <option value="gateway">homegate (localhost, no per-app setup)</option>
+          <option value="google">Google Calendar (in-extension OAuth)</option>
+          <option value="exchange">Exchange / Outlook (coming soon)</option>
+        </select>
+      </div>
+      <div id="connState" class="conn">Checking…</div>
+      <div class="btnrow">
+        <button id="connect" class="btn primary">Connect</button>
+        <button id="disconnect" class="btn">Disconnect</button>
+        <button id="reloadCals" class="btn">Refresh calendars</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Calendars to treat as “busy”</h2>
+      <p class="muted">Events on the checked calendars block availability.</p>
+      <div id="calList" class="callist muted">Connect to load your calendars.</div>
+    </section>
+
+    <section>
+      <h2>Buffers &amp; duration</h2>
+      <div class="field"><label>Buffer before meetings</label><span><input type="number" id="bufBefore" min="0" max="120" step="5"> min</span></div>
+      <div class="field"><label>Buffer after meetings</label><span><input type="number" id="bufAfter" min="0" max="120" step="5"> min</span></div>
+      <div class="field">
+        <label>Assumed slot length</label>
+        <span><input type="number" id="durOverride" min="0" max="480" step="5"> min
+        <small class="muted">(0 = infer from the grid)</small></span>
+      </div>
+    </section>
+
+    <section>
+      <h2>What counts as busy</h2>
+      <label class="check"><input type="checkbox" id="allDayBusy"> Treat all-day events as busy</label>
+      <label class="check"><input type="checkbox" id="skipDeclined"> Ignore events I've declined</label>
+      <label class="check"><input type="checkbox" id="markTightAsBad"> Mark buffer-violating slots as “if needed” (canDoBad) instead of busy</label>
+    </section>
+
+    <section>
+      <h2>Preferred hours</h2>
+      <label class="check"><input type="checkbox" id="preferredEnabled"> Highlight free slots inside my preferred window as “preferred” (green)</label>
+      <div class="field"><label>From</label><span><input type="number" id="prefStart" min="0" max="23"> :00</span></div>
+      <div class="field"><label>Until</label><span><input type="number" id="prefEnd" min="1" max="24"> :00</span></div>
+    </section>
+
+    <section>
+      <h2>Interface</h2>
+      <label class="check"><input type="checkbox" id="showPanel"> Show the floating control panel on WhenIsGood pages</label>
+    </section>
+
+    <div class="savebar">
+      <button id="save" class="btn primary">Save settings</button>
+      <span id="saved" class="saved"></span>
+    </div>
+
+    <section>
+      <h2>Credit where it's due</h2>
+      <p class="support">
+        <span class="heart">♥</span> nowisgood is just a helper — the real magic is
+        <b>WhenIsGood</b>, and its creator has kept it free for years. Try to
+        <a href="https://whenisgood.net/YourAccount?upgrade=true" target="_blank" rel="noopener">buy a premium account</a>
+        and it cheerfully tells you <i>“it's always free.”</i> Since you can't pay, the least we can do is
+        <a href="https://whenisgood.net/ContactUs" target="_blank" rel="noopener">say thanks</a>
+        and keep using it.
+      </p>
+    </section>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>
