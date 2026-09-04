@@ -9,8 +9,13 @@
  *  Microsoft Graph provider can be dropped in behind the same interface.
  *  The active provider is chosen in Options and stored in chrome.storage.
  *
- *  The content script and the popup talk to this worker via chrome.runtime
+ *  The content scripts and the popup talk to this worker via chrome.runtime
  *  messages and never touch OAuth tokens directly.
+ *
+ *  listEvents returns { events, roles }: `roles` maps calendarId -> accessRole
+ *  so the content script can honour all-day events only on calendars you own
+ *  or can edit, and ignore them on subscribed Holidays/Birthdays calendars
+ *  that would otherwise blank out whole days.
  */
 
 const PROVIDERS = {};
@@ -54,6 +59,7 @@ const GoogleProvider = {
         await this.removeToken(token);
       }
     } catch (_) { /* nothing cached */ }
+    calendarCache = null;
     return { ok: true };
   },
 
@@ -80,14 +86,26 @@ const GoogleProvider = {
       summary: c.summaryOverride || c.summary,
       primary: !!c.primary,
       selected: !!c.selected,
+      // owner / writer / reader / freeBusyReader -- drives the all-day guard.
+      accessRole: c.accessRole || "reader",
       backgroundColor: c.backgroundColor || null,
     }));
   },
 
   // Pull events from each requested calendar within [timeMin, timeMax].
   // Normalises everything we need for busy-detection and the overlay.
-  async listEvents({ timeMin, timeMax, calendarIds }, interactive) {
-    const ids = calendarIds && calendarIds.length ? calendarIds : ["primary"];
+  async listEvents({ timeMin, timeMax, calendarIds, allCalendars }, interactive) {
+    const roles = await cachedRoles(this, interactive);
+    let ids;
+    if (allCalendars) {
+      // Every calendar in the list, so calendars added later are picked up
+      // without the user revisiting Settings. Google caps us well before this.
+      ids = Object.keys(roles).slice(0, 50);
+    } else {
+      ids = calendarIds && calendarIds.length ? calendarIds : ["primary"];
+    }
+    if (!ids.length) ids = ["primary"];
+
     const out = [];
     const errors = [];
     for (const calId of ids) {
@@ -130,10 +148,33 @@ const GoogleProvider = {
     if (!out.length && errors.length) {
       throw new Error(errors.join(" | "));
     }
-    return out;
+    return { events: out, roles };
   },
 };
 PROVIDERS.google = GoogleProvider;
+
+// The calendar list barely changes and is needed on every fill (for the
+// all-day guard), so keep it briefly rather than paying an extra round trip.
+let calendarCache = null;
+const CALENDAR_CACHE_MS = 5 * 60 * 1000;
+
+async function cachedRoles(provider, interactive) {
+  if (calendarCache && Date.now() - calendarCache.at < CALENDAR_CACHE_MS) {
+    return calendarCache.roles;
+  }
+  let roles = {};
+  try {
+    for (const c of await provider.listCalendars(interactive)) {
+      roles[c.id] = c.accessRole || "reader";
+    }
+    calendarCache = { at: Date.now(), roles };
+  } catch (e) {
+    // Non-fatal: without roles the content script falls back to its own
+    // default for the all-day guard rather than failing the whole fill.
+    console.warn("nowisgood: could not load calendar roles", e);
+  }
+  return roles;
+}
 
 /* -------------------------------------------------- homegate (localhost) -- */
 // Talks to the local homegate service instead of doing OAuth in the extension.
@@ -160,14 +201,26 @@ PROVIDERS.gateway = {
   },
   async signOut() { return { ok: true }; },
   async listCalendars() {
-    return (await this._get("/calendars")).calendars;
+    // Older gateways don't report accessRole. Treat those as "owner": it's the
+    // user's own service, so the subscribed-calendar problem the guard exists
+    // for doesn't really arise, and this preserves the previous behaviour.
+    return (await this._get("/calendars")).calendars.map((c) => ({
+      accessRole: "owner",
+      ...c,
+    }));
   },
-  async listEvents({ timeMin, timeMax, calendarIds }) {
-    const qs = new URLSearchParams({
-      timeMin, timeMax,
-      calendars: (calendarIds && calendarIds.length ? calendarIds : ["primary"]).join(","),
-    });
-    return (await this._get("/events?" + qs.toString())).events;
+  async listEvents({ timeMin, timeMax, calendarIds, allCalendars }) {
+    let ids = calendarIds && calendarIds.length ? calendarIds : ["primary"];
+    const roles = {};
+    if (allCalendars) {
+      const cals = await this.listCalendars();
+      ids = cals.map((c) => c.id).slice(0, 50);
+      for (const c of cals) roles[c.id] = c.accessRole || "owner";
+    } else {
+      for (const id of ids) roles[id] = "owner";
+    }
+    const qs = new URLSearchParams({ timeMin, timeMax, calendars: ids.join(",") });
+    return { events: (await this._get("/events?" + qs.toString())).events, roles };
   },
 };
 
@@ -213,19 +266,25 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       const provider = await activeProvider();
       switch (msg.type) {
         case "NIG_SIGN_IN":
+          calendarCache = null;
           return sendResponse(await provider.signIn());
         case "NIG_SIGN_OUT":
           return sendResponse(await provider.signOut());
         case "NIG_LIST_CALENDARS":
+          calendarCache = null; // an explicit list request should not be stale
           return sendResponse({ ok: true, calendars: await provider.listCalendars(!!msg.interactive) });
-        case "NIG_LIST_EVENTS":
-          return sendResponse({
-            ok: true,
-            events: await provider.listEvents(
-              { timeMin: msg.timeMin, timeMax: msg.timeMax, calendarIds: msg.calendarIds },
-              msg.interactive !== false
-            ),
-          });
+        case "NIG_LIST_EVENTS": {
+          const result = await provider.listEvents(
+            {
+              timeMin: msg.timeMin,
+              timeMax: msg.timeMax,
+              calendarIds: msg.calendarIds,
+              allCalendars: !!msg.allCalendars,
+            },
+            msg.interactive !== false
+          );
+          return sendResponse({ ok: true, events: result.events, roles: result.roles || {} });
+        }
         case "NIG_OPEN_OPTIONS":
           chrome.runtime.openOptionsPage();
           return sendResponse({ ok: true });

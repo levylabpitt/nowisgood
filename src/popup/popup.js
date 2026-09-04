@@ -1,19 +1,27 @@
 /* nowisgood - popup. Mirrors the in-page panel for people who'd rather drive
    from the toolbar. Talks to the active tab's content script and to the
-   background worker for auth status. */
+   background worker for auth status.
+
+   The content script is the authority on whether a page is fillable: we ping
+   it and let whichever site adapter loaded there answer, so the popup needs no
+   per-site knowledge beyond recognising the hosts we inject on. */
 
 const $ = (id) => document.getElementById(id);
+
+const SUPPORTED = /^https:\/\/(whenisgood\.net|(www\.)?when2meet\.com|([a-z0-9-]+\.)?rallly\.co)\//;
 
 async function activeTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   return tab;
 }
 
-function tabHasGrid(tabId) {
+// Ask the content script what it found. Returns null when no content script is
+// running on the tab (wrong site, or the page needs a reload after an update).
+function pingTab(tabId) {
   return new Promise((resolve) => {
     chrome.tabs.sendMessage(tabId, { type: "NIG_PING" }, (resp) => {
-      if (chrome.runtime.lastError) return resolve(false);
-      resolve(!!(resp && resp.hasGrid));
+      if (chrome.runtime.lastError) return resolve(null);
+      resolve(resp || null);
     });
   });
 }
@@ -29,7 +37,7 @@ function send(tabId, type) {
 
 async function refreshConnection() {
   const conn = $("conn");
-  // A non-interactive event probe tells us whether we already have a token.
+  // A non-interactive calendar probe tells us whether we already have a token.
   const resp = await chrome.runtime.sendMessage({
     type: "NIG_LIST_CALENDARS",
     interactive: false,
@@ -47,14 +55,29 @@ async function refreshConnection() {
 
 async function init() {
   const tab = await activeTab();
-  const onWig = tab && /^https:\/\/whenisgood\.net\//.test(tab.url || "");
-  const hasGrid = onWig ? await tabHasGrid(tab.id) : false;
+  const onSupportedSite = tab && SUPPORTED.test(tab.url || "");
+  const ping = onSupportedSite ? await pingTab(tab.id) : null;
+  const hasGrid = !!(ping && ping.hasGrid);
 
   for (const id of ["fill", "overlay", "clear"]) $(id).disabled = !hasGrid;
-  if (!onWig) $("hint").textContent = "Open a WhenIsGood respond page to fill it.";
-  else if (!hasGrid) $("hint").textContent = "No availability grid found on this page.";
 
-  $("fill").onclick = async () => { await send(tab.id, "NIG_FILL"); $("hint").textContent = "Filling… check the page."; };
+  if (!onSupportedSite) {
+    $("hint").textContent = "Open a WhenIsGood or when2meet page to fill it.";
+  } else if (!ping) {
+    $("hint").textContent = "Reload this page, then try again.";
+  } else if (!hasGrid) {
+    $("hint").textContent =
+      ping.site === "when2meet"
+        ? "No editable grid yet — sign in to the event with your name first."
+        : "No availability grid found on this page.";
+  } else {
+    $("hint").textContent = "Ready on " + ping.siteName + ".";
+  }
+
+  $("fill").onclick = async () => {
+    await send(tab.id, "NIG_FILL");
+    $("hint").textContent = "Filling… check the page.";
+  };
   $("overlay").onclick = () => send(tab.id, "NIG_OVERLAY_TOGGLE");
   $("clear").onclick = () => send(tab.id, "NIG_CLEAR");
 

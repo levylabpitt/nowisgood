@@ -8,8 +8,23 @@
 <body>
   <div class="wrap">
     <h1>nowisgood settings</h1>
+    <p class="muted">These settings apply on <b>WhenIsGood</b>, <b>when2meet</b> and <b>Rallly</b>.
+      Where a site can't express something (when2meet's grid is just available / not available), the
+      note under the setting says what happens instead.</p>
 
     <section>
+      <h2>Source</h2>
+      <div class="field">
+        <label for="mode">Fill from</label>
+        <select id="mode">
+          <option value="calendar">My calendar (free slots become available)</option>
+          <option value="manual">Manual window only (no calendar, no sign-in)</option>
+        </select>
+      </div>
+      <p class="muted" id="modeHint"></p>
+    </section>
+
+    <section id="calSection">
       <h2>Calendar account</h2>
       <div class="field">
         <label for="provider">Provider</label>
@@ -27,13 +42,14 @@
       </div>
     </section>
 
-    <section>
+    <section id="calListSection">
       <h2>Calendars to treat as “busy”</h2>
-      <p class="muted">Events on the checked calendars block availability.</p>
+      <label class="check"><input type="checkbox" id="useAllCalendars"> Use every calendar in my list, including ones I add later</label>
+      <p class="muted">Otherwise, only the checked calendars below block availability.</p>
       <div id="calList" class="callist muted">Connect to load your calendars.</div>
     </section>
 
-    <section>
+    <section id="bufferSection">
       <h2>Buffers &amp; duration</h2>
       <div class="field"><label>Buffer before meetings</label><span><input type="number" id="bufBefore" min="0" max="120" step="5"> min</span></div>
       <div class="field"><label>Buffer after meetings</label><span><input type="number" id="bufAfter" min="0" max="120" step="5"> min</span></div>
@@ -44,23 +60,50 @@
       </div>
     </section>
 
-    <section>
+    <section id="busySection">
       <h2>What counts as busy</h2>
       <label class="check"><input type="checkbox" id="allDayBusy"> Treat all-day events as busy</label>
+      <label class="check sub"><input type="checkbox" id="allDayOwnedOnly"> …but only on calendars I own or can edit</label>
+      <p class="muted sub">Keeps subscribed Holidays / Birthdays calendars from blanking out whole days.</p>
       <label class="check"><input type="checkbox" id="skipDeclined"> Ignore events I've declined</label>
-      <label class="check"><input type="checkbox" id="markTightAsBad"> Mark buffer-violating slots as “if needed” (canDoBad) instead of busy</label>
+      <label class="check"><input type="checkbox" id="markTightAsBad"> Mark buffer-violating slots as “if needed” instead of busy</label>
+      <p class="muted sub">WhenIsGood shows these as <code>canDoBad</code> and Rallly as
+        <b>If need be</b>. when2meet's grid is binary, so there a buffer-violating slot is simply
+        left unavailable.</p>
     </section>
 
     <section>
+      <h2>Hours I'm willing to meet</h2>
+      <label class="check"><input type="checkbox" id="windowEnabled"> Never mark slots outside these days and hours</label>
+      <p class="muted sub">A hard filter, in your local time — a free 2 a.m. slot won't be offered.
+        In manual mode this window <i>is</i> your availability.</p>
+      <div class="field"><label>Days</label><span id="windowDays" class="days"></span></div>
+      <div class="field"><label>From</label><span><input type="number" id="winStart" min="0" max="23"> :00</span></div>
+      <div class="field"><label>Until</label><span><input type="number" id="winEnd" min="1" max="24"> :00</span></div>
+    </section>
+
+    <section id="preferredSection">
       <h2>Preferred hours</h2>
       <label class="check"><input type="checkbox" id="preferredEnabled"> Highlight free slots inside my preferred window as “preferred” (green)</label>
+      <p class="muted sub">A soft highlight, unlike the hard filter above. WhenIsGood shows these as
+        <code>canDoGood</code>; when2meet and Rallly have no equivalent, so there they're just
+        available like any other free slot.</p>
       <div class="field"><label>From</label><span><input type="number" id="prefStart" min="0" max="23"> :00</span></div>
       <div class="field"><label>Until</label><span><input type="number" id="prefEnd" min="1" max="24"> :00</span></div>
     </section>
 
     <section>
+      <h2>Full sync</h2>
+      <label class="check"><input type="checkbox" id="overwrite"> Also clear slots I'm busy for</label>
+      <p class="muted sub">Turn it off to only ever <i>raise</i> your availability, never lower it — on
+        when2meet a marked slot is left marked, and on Rallly an existing Yes is never voted down.
+        WhenIsGood is a draft you submit yourself, so its grid is always rebuilt from scratch on each
+        fill and this setting doesn't apply there.</p>
+    </section>
+
+    <section>
       <h2>Interface</h2>
-      <label class="check"><input type="checkbox" id="showPanel"> Show the floating control panel on WhenIsGood pages</label>
+      <label class="check"><input type="checkbox" id="showPanel"> Show the floating control panel on scheduling pages</label>
     </section>
 
     <div class="savebar">
@@ -71,12 +114,12 @@
     <section>
       <h2>Credit where it's due</h2>
       <p class="support">
-        <span class="heart">♥</span> nowisgood is just a helper — the real magic is
-        <b>WhenIsGood</b>, and its creator has kept it free for years. Try to
-        <a href="https://whenisgood.net/YourAccount?upgrade=true" target="_blank" rel="noopener">buy a premium account</a>
+        <span class="heart">♥</span> nowisgood is just a helper — the scheduling is all
+        <b>WhenIsGood</b> and <b>when2meet</b>, and both creators have kept their sites free for years.
+        Try to <a href="https://whenisgood.net/YourAccount?upgrade=true" target="_blank" rel="noopener">buy a premium WhenIsGood account</a>
         and it cheerfully tells you <i>“it's always free.”</i> Since you can't pay, the least we can do is
         <a href="https://whenisgood.net/ContactUs" target="_blank" rel="noopener">say thanks</a>
-        and keep using it.
+        and <a href="https://www.when2meet.com/?donate" target="_blank" rel="noopener">chip in where you can</a>.
       </p>
     </section>
   </div>
