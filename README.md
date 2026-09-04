@@ -11,6 +11,7 @@ Supported sites:
 |---|---|---|
 | [WhenIsGood](https://whenisgood.net) | four marks: free, preferred, "if needed", unselected | you press **SEND RESPONSE** |
 | [when2meet](https://www.when2meet.com) | binary available / not available | when2meet saves as you go |
+| [Rallly](https://rallly.co) | three votes: Yes / If need be / No | you press **Continue** on the poll |
 
 Bonus: a **click-through overlay** that tints every slot (green = free, amber = tight,
 red = busy with the conflicting event's name, grey = outside your hours) so you can
@@ -21,20 +22,21 @@ stays fully usable underneath.
 
 - **Fill from calendar** — marks every proposed slot you're free.
 - **Manual mode** — mark a fixed weekly window with no calendar and no sign-in at all.
-- **Buffers** — set minutes before/after meetings. On WhenIsGood, slots that touch a
-  meeting inside the buffer are marked "if needed" (`canDoBad`); when2meet has no such
-  mark, so there they're simply left unavailable.
+- **Buffers** — set minutes before/after meetings. Slots that touch a meeting inside the
+  buffer get the site's own "if needed" mark where one exists — `canDoBad` on WhenIsGood,
+  **If need be** on Rallly. when2meet's grid is binary, so there they're simply left
+  unavailable.
 - **Hours window** — a hard filter, in your local time: a free 2 a.m. slot is never
   offered. In manual mode this window *is* your availability.
 - **Preferred hours** (optional) — a soft highlight. Free slots inside the window get
   WhenIsGood's green "preferred" mark (`canDoGood`); on when2meet they're just available.
-- **Full sync** (when2meet only) — also *clear* slots you're busy for, so the grid
-  matches your calendar. Turn it off to only ever add availability, never remove.
+- **Full sync** — also *clear* slots you're busy for, so the grid matches your calendar.
+  Turn it off to only ever raise your availability, never lower it.
 - **Overlay** (optional) — translucent, click-through calendar summary over the grid.
-- Nothing is auto-submitted. On WhenIsGood it only sets the same cell states you'd set
-  by clicking, and WhenIsGood's own **SEND RESPONSE** button does the submitting. On
-  when2meet it drives the site's own drag handlers, so the site saves it exactly as if
-  you'd dragged.
+- Nothing is auto-submitted. On WhenIsGood it only sets the same cell states you'd set by
+  clicking, and WhenIsGood's own **SEND RESPONSE** button does the submitting. On when2meet
+  it drives the site's own drag handlers, so the site saves it exactly as if you'd dragged.
+  On Rallly it sets your votes and stops — you review them and press **Continue**.
 
 ## Calendar providers
 
@@ -88,13 +90,17 @@ Skip this entirely if you use the **homegate** provider or **manual mode**.
    Approve the read-only calendar scope.
 2. In **Settings**, tick which calendars count as "busy" and set your buffers, hours and
    preferences.
-3. Open a WhenIsGood respond page (`whenisgood.net/<code>`) or a when2meet event. A small
-   panel appears top-right. Click **Fill my availability**, tweak, toggle the **Overlay**
-   if you like — then hit **SEND RESPONSE** on WhenIsGood, or just leave the when2meet page.
+3. Open a WhenIsGood respond page (`whenisgood.net/<code>`), a when2meet event, or a Rallly
+   invite (`app.rallly.co/invite/<id>`). A small panel appears top-right. Click **Fill my
+   availability**, tweak, toggle the **Overlay** if you like — then finish the way that site
+   expects (see the table above).
 
-**On when2meet, sign in to the event first** — type your name (and password, if it has
-one) so your editable grid appears. The extension checks this before painting, because
-otherwise the grid would look filled and save nothing.
+Two per-site preconditions, both checked before anything is changed:
+
+- **when2meet** — sign in to the event first (type your name, and password if it has one)
+  so your editable grid appears. Otherwise the grid would look filled and save nothing.
+- **Rallly** — open your response row first (press **Continue** / click into the vote row)
+  so the vote buttons exist.
 
 ---
 
@@ -111,10 +117,10 @@ otherwise the grid would look filled and save nothing.
 | Treat all-day events as busy | Off by default (birthdays etc. shouldn't block you); turn on if you use all-day "Out of office". |
 | …but only on calendars I own or can edit | On by default. Keeps subscribed Holidays/Birthdays calendars from blanking whole days. |
 | Ignore events I've declined | On by default. |
-| Mark buffer-violating slots as "if needed" | WhenIsGood: `canDoBad`. when2meet: left unavailable. |
+| Mark buffer-violating slots as "if needed" | WhenIsGood: `canDoBad`. Rallly: **If need be**. when2meet: left unavailable. |
 | Hours I'm willing to meet | Hard day/hour filter in your local time. |
-| Preferred hours | Soft highlight for free slots inside a window (`canDoGood` on WhenIsGood). |
-| Full sync | when2meet only: also clear slots you're busy for. |
+| Preferred hours | Soft highlight for free slots inside a window (`canDoGood` on WhenIsGood; no equivalent on when2meet or Rallly). |
+| Full sync | Also clear slots you're busy for. On Rallly this means never lowering an existing vote when off. |
 | Show floating panel | Toggle the in-page control panel. |
 
 ## Privacy
@@ -138,6 +144,7 @@ src/
     sites/
       whenisgood.js          WhenIsGood grid adapter
       when2meet.js           when2meet grid adapter
+      rallly.js              Rallly vote adapter
     bridge/
       when2meet-main.js      MAIN-world shim, reads when2meet's window.UserID
   popup/                     toolbar popup (mirror of the panel)
@@ -149,7 +156,9 @@ icons/                       16 / 48 / 128 px
 
 `core.js` holds everything site-agnostic; a site adapter is one object registered on
 `window.__NIG_ADAPTERS`, implementing `detect`, `slots`, `ensureReady`, `paint`, `clear`,
-`verify` and `supportNote`, plus a `caps` block declaring how expressive the grid is.
+`verify` and `supportNote`, plus a `caps` block declaring how expressive the grid is
+(`tight`, `preferred`, `autosaves`, `canClear`, `overlay`, and the `submitHint` shown
+after a fill).
 `src/content/sites/whenisgood.js` is the reference implementation and the full contract
 is documented at the top of `core.js`. Add the adapter to `content_scripts` in the
 manifest (adapter first, `core.js` last — they share one isolated world).
@@ -167,6 +176,9 @@ The two sites encode slots differently, so each adapter owns its own conversion:
   mis-filling.
 - **when2meet** encodes slots as true epoch seconds, so they're absolute instants and need
   no correction — the fill is correct even when the event's display timezone isn't yours.
+- **Rallly** states each option's wall-clock time in the viewer's own timezone, so the
+  parsed time is already the right instant. If you change the poll's display timezone in
+  Rallly's own UI, fill again afterwards so the labels and your calendar agree.
 
 Your calendar events are absolute instants in both cases, so once the slot instant is
 right the comparison is exact. The hours window and preferred hours are evaluated in your
@@ -180,5 +192,12 @@ browser's local zone.
   synthesizes the same mousedown/mouseover/mouseup the site's own drag produces. Its
   add-vs-erase mode comes from the first cell in a run, which is why marking and clearing
   happen in two separate passes.
+- Rallly exposes no time data in the DOM at all, so its adapter parses each vote button's
+  `aria-label` ("12 Mar 2026, 9:00 AM – 9:30 AM, Yes"). That depends on Rallly's English
+  locale: options it can't read are left untouched and reported, and if it can't read *any*
+  of them it changes nothing and says so. Rallly also replaces the button node on every
+  click, so each option is re-found by its date/time key between clicks.
+- Rallly self-hosted on your own domain won't match the manifest's `rallly.co` hosts. Add
+  your domain to `host_permissions` and the Rallly `content_scripts` entry to use it there.
 - Google OAuth in "Testing" mode issues refresh tokens that expire after 7 days of
   inactivity — just click **Connect** again if a fill says you're not connected.

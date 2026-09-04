@@ -76,11 +76,13 @@
     rawUnitMs: 1000, // ids are epoch seconds
 
     caps: {
-      states: 2,       // binary available / not available
+      tight: false,    // binary grid: available or not, nothing in between
+      preferred: false,
       autosaves: true, // when2meet persists each painted run
       needsSignIn: true,
       canClear: true,
       overlay: true,
+      submitHint: "when2meet saves automatically.",
     },
 
     detect() {

@@ -8,7 +8,7 @@
 
 const $ = (id) => document.getElementById(id);
 
-const SUPPORTED = /^https:\/\/(whenisgood\.net|(www\.)?when2meet\.com)\//;
+const SUPPORTED = /^https:\/\/(whenisgood\.net|(www\.)?when2meet\.com|([a-z0-9-]+\.)?rallly\.co)\//;
 
 async function activeTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });

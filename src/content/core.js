@@ -15,13 +15,17 @@
  *    siteName      human label for the UI, e.g. "WhenIsGood"
  *    rawUnitMs     multiplier turning the site's raw slot key into ms
  *                  (1 for epoch-millis ids, 1000 for epoch-seconds ids)
- *    caps          { states, autosaves, needsSignIn, canClear, overlay }
- *                    states 4 -> free/tight/preferred are distinct marks
- *                    states 2 -> binary available/not (tight collapses to not)
+ *    caps          { tight, preferred, autosaves, needsSignIn, canClear,
+ *                    overlay, submitHint }
+ *                    tight     -> the grid has an "if needed" mark of its own
+ *                    preferred -> the grid can distinguish a preferred slot
+ *                    submitHint-> what the user must do after a fill
  *    detect()      -> bool, is this page a fillable grid right now?
- *    slots()       -> [{ cell, raw, startMs }]  raw is the site's own uniform
- *                    slot key, used for slot-length inference; startMs is the
- *                    real instant the slot begins.
+ *    slots()       -> [{ cell, raw, startMs, endMs? }]  raw is the site's own
+ *                    uniform slot key, used for slot-length inference; startMs
+ *                    is the real instant the slot begins. Supply endMs only
+ *                    where the site states each slot's length itself (Rallly);
+ *                    otherwise it's inferred from the grid spacing.
  *    ensureReady() -> Promise<{ ok, message }>  pre-flight (e.g. sign-in check)
  *    paint(classified, opts) -> { marked, cleared }
  *    clear()       -> { cleared }
@@ -144,8 +148,11 @@
     const before = prefs.bufferBeforeMin * MIN;
     const after = prefs.bufferAfterMin * MIN;
 
-    return slots.map(({ cell, startMs }) => {
-      const endMs = startMs + slotLen;
+    return slots.map(({ cell, startMs, endMs: ownEnd }) => {
+      // Sites that state each slot's own length (Rallly proposes arbitrary
+      // times) win over the inferred grid spacing -- unless the user has
+      // explicitly overridden the duration.
+      const endMs = prefs.durationOverrideMin > 0 || !ownEnd ? startMs + slotLen : ownEnd;
       if (outsideWindow(startMs)) {
         return { cell, startMs, endMs, state: "outside", preferred: false, conflict: null };
       }
@@ -287,7 +294,7 @@
 
     let result;
     try {
-      result = adapter.paint(classified, { overwrite: prefs.overwrite });
+      result = await adapter.paint(classified, { overwrite: prefs.overwrite });
     } catch (e) {
       return setStatus("Couldn't paint the grid: " + (e.message || e), "error");
     }
@@ -298,25 +305,25 @@
     const check = adapter.verify(slots);
     const parts = [
       (counts.free || 0) + " free",
-      adapter.caps.states === 4 ? (counts.tight || 0) + " tight" : null,
+      adapter.caps.tight ? (counts.tight || 0) + " tight" : null,
       (counts.busy || 0) + " busy",
       prefs.windowEnabled ? (counts.outside || 0) + " outside hours" : null,
     ].filter(Boolean);
 
     if (!check.ok) {
-      setStatus(check.note + " Double-check before " + (adapter.caps.autosaves ? "leaving." : "sending."), "error");
+      setStatus(check.note + " " + adapter.caps.submitHint, "error");
       return;
     }
     setStatus(
       "Filled in " + tz + ": " + parts.join(", ") + ". " +
       "Marked " + result.marked + (result.cleared ? ", cleared " + result.cleared : "") + ". " +
-      (adapter.caps.autosaves ? adapter.siteName + " saves automatically." : "Review and tweak, then SEND."),
+      adapter.caps.submitHint,
       "ok"
     );
   }
 
-  function runClear() {
-    const result = adapter.clear();
+  async function runClear() {
+    const result = await adapter.clear();
     setOverlay(false);
     lastClassified = null;
     setStatus("Cleared " + result.cleared + " slot(s).", "ok");

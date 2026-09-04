@@ -58,11 +58,13 @@
     rawUnitMs: 1, // ids are already epoch millis
 
     caps: {
-      states: 4,        // proposed / canDo / canDoGood / canDoBad
+      tight: true,      // canDoBad -- "I can do it, but it's tight"
+      preferred: true,  // canDoGood
       autosaves: false, // the user submits with SEND RESPONSE
       needsSignIn: false,
       canClear: true,
       overlay: true,
+      submitHint: "Review and tweak, then hit SEND RESPONSE.",
     },
 
     detect() {

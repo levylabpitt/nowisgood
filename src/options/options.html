@@ -8,8 +8,8 @@
 <body>
   <div class="wrap">
     <h1>nowisgood settings</h1>
-    <p class="muted">These settings apply on both <b>WhenIsGood</b> and <b>when2meet</b>. Where a
-      site can't express something (when2meet's grid is just available / not available), the
+    <p class="muted">These settings apply on <b>WhenIsGood</b>, <b>when2meet</b> and <b>Rallly</b>.
+      Where a site can't express something (when2meet's grid is just available / not available), the
       note under the setting says what happens instead.</p>
 
     <section>
@@ -67,8 +67,9 @@
       <p class="muted sub">Keeps subscribed Holidays / Birthdays calendars from blanking out whole days.</p>
       <label class="check"><input type="checkbox" id="skipDeclined"> Ignore events I've declined</label>
       <label class="check"><input type="checkbox" id="markTightAsBad"> Mark buffer-violating slots as “if needed” instead of busy</label>
-      <p class="muted sub">WhenIsGood shows these as <code>canDoBad</code>. when2meet has no such mark, so
-        there a buffer-violating slot is simply left unavailable.</p>
+      <p class="muted sub">WhenIsGood shows these as <code>canDoBad</code> and Rallly as
+        <b>If need be</b>. when2meet's grid is binary, so there a buffer-violating slot is simply
+        left unavailable.</p>
     </section>
 
     <section>
@@ -85,17 +86,19 @@
       <h2>Preferred hours</h2>
       <label class="check"><input type="checkbox" id="preferredEnabled"> Highlight free slots inside my preferred window as “preferred” (green)</label>
       <p class="muted sub">A soft highlight, unlike the hard filter above. WhenIsGood shows these as
-        <code>canDoGood</code>; on when2meet they're just available like any other free slot.</p>
+        <code>canDoGood</code>; when2meet and Rallly have no equivalent, so there they're just
+        available like any other free slot.</p>
       <div class="field"><label>From</label><span><input type="number" id="prefStart" min="0" max="23"> :00</span></div>
       <div class="field"><label>Until</label><span><input type="number" id="prefEnd" min="1" max="24"> :00</span></div>
     </section>
 
     <section>
-      <h2>Sites that save as you go</h2>
-      <label class="check"><input type="checkbox" id="overwrite"> Full sync: also clear slots I'm busy for</label>
-      <p class="muted sub">Only affects when2meet, which persists every change immediately. Turn it off to
-        only ever <i>add</i> availability. WhenIsGood is a draft you submit yourself, so its grid is always
-        rebuilt from scratch on each fill.</p>
+      <h2>Full sync</h2>
+      <label class="check"><input type="checkbox" id="overwrite"> Also clear slots I'm busy for</label>
+      <p class="muted sub">Turn it off to only ever <i>raise</i> your availability, never lower it — on
+        when2meet a marked slot is left marked, and on Rallly an existing Yes is never voted down.
+        WhenIsGood is a draft you submit yourself, so its grid is always rebuilt from scratch on each
+        fill and this setting doesn't apply there.</p>
     </section>
 
     <section>
