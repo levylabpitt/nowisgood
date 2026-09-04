@@ -1,5 +1,7 @@
 /* nowisgood - in-page control panel + click-through overlay.
-   Themed to WhenIsGood's own palette so the add-on feels native:
+   Shared by every site adapter (WhenIsGood, when2meet), themed to WhenIsGood's
+   palette since that's where the add-on started and the colors read cleanly on
+   when2meet's neutral grid too:
      free/good   #00FF00   (canDo / canDoGood)
      if-needed   #CCFF66   (canDoBad)
      cannot-do   #CC0000
@@ -39,6 +41,12 @@
   color: #00ff00;
   text-shadow: 0 0 6px rgba(0, 255, 0, .65), 0 0 2px rgba(0, 255, 0, .9), 0 1px 0 #064006;
 }
+/* which site adapter is driving, so the panel is self-explanatory on both */
+.nig-site {
+  margin-left: auto; margin-right: 8px;
+  font-size: 10px; letter-spacing: .4px; text-transform: uppercase;
+  color: #6f8a72;
+}
 .nig-x {
   border: none; background: transparent; cursor: pointer;
   font-size: 18px; line-height: 1; color: #6f8a72; padding: 0 2px;
@@ -74,6 +82,12 @@
 .nig-btn-overlay.nig-active {
   background: #00ff00; border-color: #00bb00; color: #0a3d0a;
   box-shadow: inset 0 0 0 1px #b6ffb6;
+}
+
+.nig-mode { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: #4a6b4f; flex: 1; }
+.nig-mode select {
+  flex: 1; padding: 3px 4px; font-size: 12px;
+  border: 1px solid #bcdcbc; border-radius: 6px; background: #fff; color: #14401a;
 }
 
 .nig-buf { display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: #4a6b4f; flex: 1; }
@@ -117,6 +131,8 @@
 .nig-free  { background: rgba(0, 255, 0, 0.30);   box-shadow: inset 0 0 0 1px rgba(0, 180, 0, .6); }   /* #00FF00 */
 .nig-tight { background: rgba(204, 255, 102, 0.45); box-shadow: inset 0 0 0 1px rgba(150, 190, 40, .7); } /* #CCFF66 */
 .nig-busy  { background: rgba(204, 0, 0, 0.28);    box-shadow: inset 0 0 0 1px rgba(170, 0, 0, .55); }  /* #CC0000 */
+/* excluded by the hours/days window rather than by a meeting - muted, not alarming */
+.nig-outside { background: rgba(120, 130, 125, 0.20); box-shadow: inset 0 0 0 1px rgba(110, 120, 115, .4); }
 .nig-label {
   position: absolute;
   left: 2px; right: 2px; bottom: 1px;

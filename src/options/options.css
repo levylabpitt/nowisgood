@@ -49,3 +49,9 @@ select { padding: 6px 8px; border: 1px solid #bcdcbc; border-radius: 7px; backgr
 .support a { color: #0a8a0a; font-weight: 600; text-decoration: none; }
 .support a:hover { text-decoration: underline; }
 .heart { color: #00bb00; }
+
+/* day pickers in the hours window */
+.days { display: flex; flex-wrap: wrap; gap: 8px; }
+.days .day { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; }
+.check.sub, .muted.sub { margin-left: 22px; }
+.muted.sub { margin-top: 2px; }

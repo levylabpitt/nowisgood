@@ -1,13 +1,15 @@
 {
   "manifest_version": 3,
   "name": "nowisgood",
-  "version": "0.1.0",
-  "description": "Draft-fill WhenIsGood availability grids from your Google Calendar, then tweak. Optional click-through calendar overlay and meeting buffers.",
+  "version": "0.2.0",
+  "description": "Draft-fill WhenIsGood and when2meet availability grids from your Google Calendar, then tweak. Optional click-through calendar overlay and meeting buffers.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyFzPYoCABBIGPF0StKgt+NAqPbAwo29pRoedJTXQlnlPnNKAd8elP1lhuqF9bMwy5hNunHqb0Ql8D+zNF2SX4PHX6ZLhPHC6sczYCAVWDJSAJQcQyxK7Vq13PKD5B70+4yv0cIN7hwBtJOOyxIUn1g3g3eujzZ4vvrgU3a50T0a29ykDOUvn6eJZ/Qt2E7Djj+aw7xtSOSbGfOqXd56Pl3yUX0TjcWEfqH49759+saoZnqiI44UEkfwHMXIIJxm98DlPLkHToJj3S+sTBfg6aV/9ZOqkoVXd2BIDK+/dHE251VRiBdciHFFyvrfSm0M/RVsPYHalErT4OI/5xvTkQQIDAQAB",
   "minimum_chrome_version": "116",
   "permissions": ["identity", "storage", "activeTab", "scripting"],
   "host_permissions": [
     "https://whenisgood.net/*",
+    "https://www.when2meet.com/*",
+    "https://when2meet.com/*",
     "https://www.googleapis.com/*",
     "http://127.0.0.1:8788/*",
     "http://localhost:8788/*"
@@ -27,7 +29,19 @@
   "content_scripts": [
     {
       "matches": ["https://whenisgood.net/*"],
-      "js": ["src/content/fill.js"],
+      "js": ["src/content/sites/whenisgood.js", "src/content/core.js"],
+      "css": ["src/content/panel.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.when2meet.com/*", "https://when2meet.com/*"],
+      "js": ["src/content/bridge/when2meet-main.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://www.when2meet.com/*", "https://when2meet.com/*"],
+      "js": ["src/content/sites/when2meet.js", "src/content/core.js"],
       "css": ["src/content/panel.css"],
       "run_at": "document_idle"
     }
