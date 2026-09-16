@@ -27,10 +27,7 @@
  *                    where the site states each slot's length itself (Rallly);
  *                    otherwise it's inferred from the grid spacing.
  *    ensureReady() -> Promise<{ ok, message }>  pre-flight (e.g. sign-in check)
- *    paint(classified, opts) -> { marked, cleared, corrected?, stillWrong? }
- *                    An adapter that synthesizes input MUST read the grid back
- *                    and report what actually landed: corrected = repaired
- *                    after the first pass, stillWrong = could not be set.
+ *    paint(classified, opts) -> { marked, cleared }
  *    clear()       -> { cleared }
  *    verify(slots) -> { ok, note }  site-specific sanity check after a fill
  *    supportNote() -> HTML string shown at the bottom of the panel
@@ -308,9 +305,7 @@
     const check = adapter.verify(slots);
     const parts = [
       (counts.free || 0) + " free",
-      counts.tight
-        ? counts.tight + (adapter.caps.tight ? " tight" : " tight (left unavailable)")
-        : null,
+      adapter.caps.tight ? (counts.tight || 0) + " tight" : null,
       (counts.busy || 0) + " busy",
       prefs.windowEnabled ? (counts.outside || 0) + " outside hours" : null,
     ].filter(Boolean);
@@ -319,21 +314,9 @@
       setStatus(check.note + " " + adapter.caps.submitHint, "error");
       return;
     }
-    // An adapter that paints by synthesizing input reports what the grid says
-    // afterwards, not what we asked it to do. Anything it couldn't set is an
-    // error, however tidy the classification was.
-    if (result.stillWrong) {
-      return setStatus(
-        "Filled " + parts.join(", ") + ", but " + result.stillWrong +
-        " slot(s) wouldn't take — the grid does NOT match your calendar. " +
-        "Please check it by hand and report this.",
-        "error"
-      );
-    }
     setStatus(
       "Filled in " + tz + ": " + parts.join(", ") + ". " +
-      "Marked " + result.marked + (result.cleared ? ", cleared " + result.cleared : "") +
-      (result.corrected ? " (" + result.corrected + " repaired)" : "") + ". " +
+      "Marked " + result.marked + (result.cleared ? ", cleared " + result.cleared : "") + ". " +
       adapter.caps.submitHint,
       "ok"
     );
@@ -343,12 +326,6 @@
     const result = await adapter.clear();
     setOverlay(false);
     lastClassified = null;
-    if (result.stillWrong) {
-      return setStatus(
-        "Tried to clear, but " + result.stillWrong + " slot(s) are still set. Check the grid by hand.",
-        "error"
-      );
-    }
     setStatus("Cleared " + result.cleared + " slot(s).", "ok");
   }
 

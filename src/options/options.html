@@ -62,12 +62,9 @@
 
     <section id="busySection">
       <h2>What counts as busy</h2>
-      <label class="check"><input type="checkbox" id="allDayBusy"> Treat all-day events as busy — only those marked <b>Busy</b> in Google Calendar</label>
+      <label class="check"><input type="checkbox" id="allDayBusy"> Treat all-day events as busy</label>
       <label class="check sub"><input type="checkbox" id="allDayOwnedOnly"> …but only on calendars I own or can edit</label>
-      <p class="muted sub">Google creates all-day events as <i>Free</i> by default, and those are always ignored — which is
-        what stops birthdays and anniversaries from blanking out whole days. To make an all-day event block your time,
-        open it in Google Calendar and set its availability to <b>Busy</b>. The checkbox below adds a second guard on
-        top of that.</p>
+      <p class="muted sub">Keeps subscribed Holidays / Birthdays calendars from blanking out whole days.</p>
       <label class="check"><input type="checkbox" id="skipDeclined"> Ignore events I've declined</label>
       <label class="check"><input type="checkbox" id="markTightAsBad"> Mark buffer-violating slots as “if needed” instead of busy</label>
       <p class="muted sub">WhenIsGood shows these as <code>canDoBad</code> and Rallly as
