@@ -60,14 +60,50 @@
     el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window, button: 0 }));
   }
 
-  // Drive when2meet's paint handlers across a run of cells that all need the
-  // SAME change -- the add/erase mode comes from the first cell's state.
-  function paintRun(list) {
-    if (!list.length) return;
-    fire(list[0], "mousedown");
-    for (const c of list) fire(c, "mouseover");
-    fire(list[list.length - 1], "mouseup");
+  const colOf = (c) => { const v = c.getAttribute("data-col"); return v == null ? null : parseInt(v, 10); };
+  const rowOf = (c) => { const v = c.getAttribute("data-row"); return v == null ? null : parseInt(v, 10); };
+
+  // Commit one same-direction run with a single drag. The add/erase mode comes
+  // from the first cell's current state.
+  function dragRun(seq) {
+    if (!seq.length) return;
+    fire(seq[0], "mousedown");
+    for (const c of seq) fire(c, "mouseover");
+    fire(seq[seq.length - 1], "mouseup");
     fire(document.body, "mouseup");
+  }
+
+  // Paint an arbitrary (possibly scattered) set of cells.
+  //
+  // CRITICAL: when2meet commits the whole RECTANGLE from the mousedown anchor to
+  // the cell under the cursor at mouseup -- NOT just the cells hovered. So a
+  // single drag over a scattered set flood-fills everything between the first
+  // and last cell: hand it every free cell and it paints the entire bounding
+  // rectangle, turning busy slots green too. (That was the bug where detected
+  // meetings never showed as blocked.) We therefore paint one maximal vertical
+  // run per column -- within a single column the anchor->end rectangle is
+  // exactly that run, so only the intended cells change. Cells without col/row
+  // metadata fall back to single-cell (1x1) drags.
+  function paintCells(list) {
+    if (!list.length) return;
+    const byCol = new Map();
+    const singles = [];
+    for (const cell of list) {
+      const col = colOf(cell), row = rowOf(cell);
+      if (col == null || row == null || Number.isNaN(col) || Number.isNaN(row)) { singles.push(cell); continue; }
+      if (!byCol.has(col)) byCol.set(col, []);
+      byCol.get(col).push({ cell, row });
+    }
+    for (const items of byCol.values()) {
+      items.sort((a, b) => a.row - b.row);
+      let run = [items[0]];
+      for (let i = 1; i < items.length; i++) {
+        if (items[i].row === run[run.length - 1].row + 1) run.push(items[i]);
+        else { dragRun(run.map((x) => x.cell)); run = [items[i]]; }
+      }
+      dragRun(run.map((x) => x.cell));
+    }
+    for (const cell of singles) dragRun([cell]);
   }
 
   (window.__NIG_ADAPTERS = window.__NIG_ADAPTERS || []).push({
@@ -127,14 +163,14 @@
         if (wanted(c) && !currentlyOn) on.push(c.cell);
         else if (!wanted(c) && currentlyOn && opts.overwrite) off.push(c.cell);
       }
-      paintRun(on);
-      if (opts.overwrite) paintRun(off);
+      paintCells(on);
+      if (opts.overwrite) paintCells(off);
       return { marked: on.length, cleared: off.length };
     },
 
     clear() {
       const on = cells().filter(isOn);
-      paintRun(on);
+      paintCells(on);
       return { cleared: on.length };
     },
 

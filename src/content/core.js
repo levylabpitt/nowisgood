@@ -42,28 +42,14 @@
 
   const MIN = 60000;
 
-  const DEFAULTS = {
-    providerId: "google",
-    mode: "calendar",            // "calendar" | "manual"
-    bufferBeforeMin: 0,
-    bufferAfterMin: 0,
-    durationOverrideMin: 0,      // 0 = infer slot length from the grid
-    calendarIds: ["primary"],
-    useAllCalendars: false,      // ignore calendarIds, use every calendar
-    allDayBusy: false,           // treat all-day events as busy?
-    allDayOwnedOnly: true,       // ...but only on calendars you own or can edit
-    skipDeclined: true,
-    markTightAsBad: true,        // free-but-buffer-violated -> its own state
-    windowEnabled: false,        // hard day/hour filter (slots outside are never marked)
-    windowDays: [1, 2, 3, 4, 5], // 0=Sun .. 6=Sat
-    windowStartHour: 9,
-    windowEndHour: 18,
-    preferredEnabled: false,     // soft highlight for fully-free slots in a window
-    preferredStartHour: 9,
-    preferredEndHour: 17,
-    overwrite: true,             // on autosaving sites, also clear slots you're busy for
-    showPanel: true,
-  };
+  // Preferences schema lives in src/defaults.js (loaded before this file by
+  // the manifest), so the panel, the fill logic and the options page share one
+  // definition. Fall back to an empty object only so a missing load fails loudly
+  // on first use rather than throwing at parse time.
+  const DEFAULTS =
+    (typeof self !== "undefined" && self.NIG_DEFAULTS) ||
+    (typeof window !== "undefined" && window.NIG_DEFAULTS) ||
+    {};
 
   let prefs = { ...DEFAULTS };
   let lastClassified = null; // cached classification for the overlay
