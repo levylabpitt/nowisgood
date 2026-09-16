@@ -137,6 +137,7 @@ Two per-site preconditions, both checked before anything is changed:
 ```
 manifest.json
 src/
+  defaults.js               the preferences schema + defaults (one source of truth)
   background.js              OAuth + calendar providers (Google, homegate, Exchange stub)
   content/
     core.js                  prefs, busy detection, classification, panel, overlay

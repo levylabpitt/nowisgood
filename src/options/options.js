@@ -1,28 +1,9 @@
 /* nowisgood - options page logic. Shared by every site adapter; a few settings
    only bite on one of them and say so in the page copy. */
 
-const DEFAULTS = {
-  providerId: "google",
-  mode: "calendar",
-  bufferBeforeMin: 0,
-  bufferAfterMin: 0,
-  durationOverrideMin: 0,
-  calendarIds: ["primary"],
-  useAllCalendars: false,
-  allDayBusy: false,
-  allDayOwnedOnly: true,
-  skipDeclined: true,
-  markTightAsBad: true,
-  windowEnabled: false,
-  windowDays: [1, 2, 3, 4, 5],
-  windowStartHour: 9,
-  windowEndHour: 18,
-  preferredEnabled: false,
-  preferredStartHour: 9,
-  preferredEndHour: 17,
-  overwrite: true,
-  showPanel: true,
-};
+// Preferences schema lives in src/defaults.js (loaded before this file by
+// options.html), the single source of truth shared with the content script.
+const DEFAULTS = (window.NIG_DEFAULTS || self.NIG_DEFAULTS);
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "nowisgood",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Draft-fill WhenIsGood, when2meet and Rallly availability grids from your Google Calendar, then tweak. Optional click-through calendar overlay and meeting buffers.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyFzPYoCABBIGPF0StKgt+NAqPbAwo29pRoedJTXQlnlPnNKAd8elP1lhuqF9bMwy5hNunHqb0Ql8D+zNF2SX4PHX6ZLhPHC6sczYCAVWDJSAJQcQyxK7Vq13PKD5B70+4yv0cIN7hwBtJOOyxIUn1g3g3eujzZ4vvrgU3a50T0a29ykDOUvn6eJZ/Qt2E7Djj+aw7xtSOSbGfOqXd56Pl3yUX0TjcWEfqH49759+saoZnqiI44UEkfwHMXIIJxm98DlPLkHToJj3S+sTBfg6aV/9ZOqkoVXd2BIDK+/dHE251VRiBdciHFFyvrfSm0M/RVsPYHalErT4OI/5xvTkQQIDAQAB",
   "minimum_chrome_version": "116",
@@ -54,6 +54,7 @@
         "https://whenisgood.net/*"
       ],
       "js": [
+        "src/defaults.js",
         "src/content/sites/whenisgood.js",
         "src/content/core.js"
       ],
@@ -79,6 +80,7 @@
         "https://when2meet.com/*"
       ],
       "js": [
+        "src/defaults.js",
         "src/content/sites/when2meet.js",
         "src/content/core.js"
       ],
@@ -93,6 +95,7 @@
         "https://*.rallly.co/*"
       ],
       "js": [
+        "src/defaults.js",
         "src/content/sites/rallly.js",
         "src/content/core.js"
       ],
