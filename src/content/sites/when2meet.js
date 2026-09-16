@@ -33,6 +33,13 @@
     return getComputedStyle(cell).backgroundColor === AVAIL_COLOR;
   }
 
+  function cellEntries() {
+    return cells().map((cell) => {
+      const raw = slotSeconds(cell);
+      return { cell, raw, startMs: raw * 1000 };
+    });
+  }
+
   // Ask the MAIN-world bridge for when2meet's window.UserID. Resolves 0 if the
   // person hasn't signed in to the event (painting would look right but not save).
   function signedInUserId(timeoutMs) {
@@ -60,14 +67,60 @@
     el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window, button: 0 }));
   }
 
-  // Drive when2meet's paint handlers across a run of cells that all need the
-  // SAME change -- the add/erase mode comes from the first cell's state.
+  // Drive when2meet's paint handlers across a run of cells.
+  //
+  // IMPORTANT: when2meet fills the whole REGION between the anchor cell and the
+  // last cell the drag reaches -- it does not paint each cell that happens to
+  // receive a mouseover. Passing a scattered selection therefore fills every
+  // slot between the first and last, which is how a fill once marked a whole
+  // grid available. Only ever hand this a set of cells that form one solid
+  // block in the grid: a contiguous time range within a single day column.
   function paintRun(list) {
     if (!list.length) return;
     fire(list[0], "mousedown");
     for (const c of list) fire(c, "mouseover");
     fire(list[list.length - 1], "mouseup");
     fire(document.body, "mouseup");
+  }
+
+  // A single cell is a 1x1 region, so this is safe whatever the site's drag
+  // semantics turn out to be. Used to repair anything the run-based pass got
+  // wrong. Toggles, so only call it on a cell that is in the wrong state.
+  function paintCell(cell) {
+    fire(cell, "mousedown");
+    fire(cell, "mouseover");
+    fire(cell, "mouseup");
+    fire(document.body, "mouseup");
+  }
+
+  // The grid increment, from the smallest positive gap between slot starts.
+  function slotLengthOf(entries) {
+    const starts = [...new Set(entries.map((e) => e.startMs))].sort((a, b) => a - b);
+    let gap = Infinity;
+    for (let i = 1; i < starts.length; i++) {
+      const d = starts[i] - starts[i - 1];
+      if (d > 0 && d < gap) gap = d;
+    }
+    return isFinite(gap) ? gap : 15 * 60000;
+  }
+
+  // Split cells needing the same change into solid blocks: same calendar day,
+  // consecutive slot starts. Each block is one column of the grid, which is
+  // exactly the gesture a person makes when dragging down a day.
+  function solidBlocks(entries, slotLen) {
+    const sorted = [...entries].sort((a, b) => a.startMs - b.startMs);
+    const blocks = [];
+    let run = [];
+    for (const e of sorted) {
+      if (!run.length) { run = [e]; continue; }
+      const prev = run[run.length - 1];
+      const sameDay =
+        new Date(prev.startMs).toDateString() === new Date(e.startMs).toDateString();
+      if (sameDay && e.startMs - prev.startMs === slotLen) run.push(e);
+      else { blocks.push(run); run = [e]; }
+    }
+    if (run.length) blocks.push(run);
+    return blocks;
   }
 
   (window.__NIG_ADAPTERS = window.__NIG_ADAPTERS || []).push({
@@ -90,10 +143,7 @@
     },
 
     slots() {
-      return cells().map((cell) => {
-        const raw = slotSeconds(cell);
-        return { cell, raw, startMs: raw * 1000 };
-      });
+      return cellEntries();
     },
 
     async ensureReady() {
@@ -118,24 +168,54 @@
     // Binary grid: "tight" (buffer-violated) and "outside" both count as NOT
     // available, which is the conservative reading -- a slot that brushes a
     // meeting shouldn't be offered as free when there's no "if needed" mark.
-    paint(classified, opts) {
-      const wanted = (c) => c.state === "free";
-      const on = [];
-      const off = [];
+    //
+    // Painting happens in solid per-day blocks (see paintRun), then the grid is
+    // read back and anything still wrong is repaired cell by cell. The readback
+    // is the part that matters: it means a wrong assumption about the site's
+    // drag behaviour shows up as a corrected count or an honest error, never as
+    // a silently mis-filled poll.
+    async paint(classified, opts) {
+      const want = (c) => c.state === "free";
+      const expected = new Map();
+      const toOn = [];
+      const toOff = [];
       for (const c of classified) {
-        const currentlyOn = isOn(c.cell);
-        if (wanted(c) && !currentlyOn) on.push(c.cell);
-        else if (!wanted(c) && currentlyOn && opts.overwrite) off.push(c.cell);
+        const on = isOn(c.cell);
+        const w = want(c);
+        expected.set(c.cell, w ? true : opts.overwrite ? false : on);
+        if (w && !on) toOn.push(c);
+        else if (!w && on && opts.overwrite) toOff.push(c);
       }
-      paintRun(on);
-      if (opts.overwrite) paintRun(off);
-      return { marked: on.length, cleared: off.length };
+
+      const slotLen = slotLengthOf(classified);
+      for (const block of solidBlocks(toOn, slotLen)) paintRun(block.map((e) => e.cell));
+      if (opts.overwrite) {
+        for (const block of solidBlocks(toOff, slotLen)) paintRun(block.map((e) => e.cell));
+      }
+
+      // Readback. Repair one cell at a time; a 1x1 region can't overshoot.
+      let corrected = 0;
+      for (const c of classified) {
+        if (isOn(c.cell) === expected.get(c.cell)) continue;
+        paintCell(c.cell);
+        corrected++;
+      }
+      const stillWrong = classified.filter((c) => isOn(c.cell) !== expected.get(c.cell)).length;
+
+      return { marked: toOn.length, cleared: toOff.length, corrected, stillWrong };
     },
 
-    clear() {
-      const on = cells().filter(isOn);
-      paintRun(on);
-      return { cleared: on.length };
+    async clear() {
+      const cells = cellEntries();
+      const on = cells.filter((e) => isOn(e.cell));
+      for (const block of solidBlocks(on, slotLengthOf(cells))) paintRun(block.map((e) => e.cell));
+      let stillWrong = 0;
+      for (const e of cells) {
+        if (!isOn(e.cell)) continue;
+        paintCell(e.cell);
+        if (isOn(e.cell)) stillWrong++;
+      }
+      return { cleared: on.length, stillWrong };
     },
 
     // Slot ids are absolute instants, so there's no timezone model to check.
