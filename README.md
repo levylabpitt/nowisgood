@@ -168,13 +168,15 @@ manifest (adapter first, `core.js` last — they share one isolated world).
 
 The two sites encode slots differently, so each adapter owns its own conversion:
 
-- **WhenIsGood** encodes each slot id as its **wall-clock time stamped as UTC**, and the
-  visible label ("10:00 am") is that UTC reading. A slot means that clock time in **your
-  own local timezone** — so the adapter converts each id's UTC fields back into a real
-  instant in your local zone (DST-correct for that date) before checking your calendar.
-  On each fill it cross-checks the visible grid labels against this model; if a poll turns
-  out to use a fixed/shifted timezone, it says so in the status line instead of silently
-  mis-filling.
+- **WhenIsGood** has two encodings, and the adapter detects which by sampling the grid.
+  On a **legacy** poll the slot id is its **wall-clock time stamped as UTC** and the visible
+  label ("10:00 am") is that UTC reading; the slot means that clock time in **your own local
+  timezone**, so the adapter re-reads the id's UTC fields as a local instant (DST-correct for
+  the date). On a **timezone-enabled** poll (the ones with a "Your Time Zone" selector) the id
+  is already a **true epoch instant** and the labels are rendered in the selected zone, so the
+  id is used directly. The adapter picks the mode by comparing labels to the id's UTC reading —
+  all matching is legacy, a uniform offset is a timezone poll — and only warns when a single
+  grid mixes the two inconsistently.
 - **when2meet** encodes slots as true epoch seconds, so they're absolute instants and need
   no correction — the fill is correct even when the event's display timezone isn't yours.
 - **Rallly** states each option's wall-clock time in the viewer's own timezone, so the
